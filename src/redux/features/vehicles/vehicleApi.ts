@@ -5,7 +5,7 @@ export const vehicleApi = baseApi.injectEndpoints({
         return {
             getAllVehicles: builder.query({
                 query: () => ({
-                    url: "/get-all-vehicles",
+                    url: "/vehicles/get-all-vehicles",
                     method: "GET",
                 }),
             }),

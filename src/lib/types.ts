@@ -9,9 +9,9 @@ export type RideStage =
     | 'completed';
 
 export interface Location {
-    id: string;
-    name: string;
-    coords: { x: number; y: number };
+    address: string;
+    longitude: number;
+    latitude: number  
 }
 
 export interface RideOption {
