@@ -1,8 +1,9 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
-import { GoogleMap, Marker, OverlayView, Polyline, DirectionsService, useJsApiLoader } from '@react-google-maps/api';
-import { Navigation, Compass, Shield, AlertTriangle, ChevronRight } from 'lucide-react';
+import { GoogleMap, Marker, OverlayView, Polyline, DirectionsService} from '@react-google-maps/api';
+import {AlertTriangle, ChevronRight } from 'lucide-react';
 import { Location } from '@/lib/types';
+import { useGoogleMaps } from '@/lib/GoogleMapProvider';
 
 interface CityMapProps {
     pickup: Location | null;
@@ -63,17 +64,14 @@ function LocationTag({
 }
 
 export default function CityMap({ pickup, dropoff }: CityMapProps) {
-    const { isLoaded, loadError } = useJsApiLoader({
-        id: 'apexride-google-map',
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
-    });
-
+   
+    const { isLoaded, loadError } = useGoogleMaps();
     const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
     const [directionsError, setDirectionsError] = useState<string | null>(null);
     const mapRef = React.useRef<google.maps.Map | null>(null);
 
-    const pickupLatLng = pickup ? { lat: pickup.latitude, lng: pickup.longitude } : null;
-    const dropoffLatLng = dropoff ? { lat: dropoff.latitude, lng: dropoff.longitude } : null;
+    const pickupLatLng = pickup ? { lat: pickup.latitude, lng: pickup.langitude } : null;
+    const dropoffLatLng = dropoff ? { lat: dropoff.latitude, lng: dropoff.langitude } : null;
 
     // Only re-request directions when the actual coordinates change
     const directionsKey = pickupLatLng && dropoffLatLng

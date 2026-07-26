@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { X, ArrowRight, QrCode, Apple } from 'lucide-react';
 import { useLoginMutation } from '@/redux/features/auth/authApi';
 import { setCookie } from 'cookies-next/client';
+import toast from 'react-hot-toast';
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -40,8 +41,8 @@ export default function LoginModal({ isOpen, onClose, onSuccess }: LoginModalPro
             }
 
              
-        } catch (error) {
-            console.error('Login failed:', error);
+        } catch (error:any) {
+           toast.error(error?.data?.message)
         }
     };
 

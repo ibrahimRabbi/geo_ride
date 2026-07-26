@@ -10,7 +10,7 @@ export type RideStage =
 
 export interface Location {
     address: string;
-    longitude: number;
+    langitude: number;
     latitude: number  
 }
 

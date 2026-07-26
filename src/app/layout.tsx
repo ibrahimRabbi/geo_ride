@@ -28,6 +28,7 @@ export default function RootLayout({
         <Wrapper>
           {children}
         </Wrapper>
+        
       </body>
     </html>
   );

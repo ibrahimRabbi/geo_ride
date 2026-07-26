@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Loader2, X } from "lucide-react";
 import { Autocomplete, useLoadScript } from "@react-google-maps/api";
+import { useGoogleMaps } from "@/lib/GoogleMapProvider";
 
 interface AddressInputProps {
     value?: string;
@@ -37,11 +38,7 @@ export default function AddressInput({
     const inputRef = useRef<HTMLInputElement>(null);
     const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-    // Google Maps script load using official hook
-    const { isLoaded, loadError } = useLoadScript({
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-        libraries,
-    });
+    const { isLoaded, loadError } = useGoogleMaps();
 
     // Sync external value
     useEffect(() => {

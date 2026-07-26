@@ -2,14 +2,25 @@ import { baseApi } from "@/redux/baseApi";
 
 export const authApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
+
         login: builder.mutation({
             query: (data) => ({
-                url: "/auth/sign-in",
+                url: "/rider/sign-in",
                 method: "POST",
                 body: data,
             }),
         }),
+
+        getRiderProfile: builder.query({
+            query: () => {
+                return {
+                    url: '/rider/get-rider-profile',
+                    method : 'GET',
+                }
+            }
+        })
+
     })
 })
 
-export const { useLoginMutation } = authApi
+export const { useLoginMutation, useGetRiderProfileQuery } = authApi

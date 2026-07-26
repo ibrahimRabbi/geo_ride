@@ -6,6 +6,9 @@ import { Location } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import LoginModal from "./LoginModal";
 import AddressInput from "./AddressInput";
+import { useGetRiderProfileQuery } from "@/redux/features/auth/authApi";
+import { useCreateRideReqestMutation } from "@/redux/features/ride/rideApi";
+import toast from "react-hot-toast";
 
 interface BookingPanelProps {
     pickup: Location | null;
@@ -14,8 +17,6 @@ interface BookingPanelProps {
     setDropoff: (loc: Location | null) => void;
     onContinue?: () => void;
 }
-
-const RIDE_LOCATIONS_STORAGE_KEY = "geoMate_ride_locations";
 
  
 const SUGGESTED_LOCATIONS = [
@@ -39,6 +40,8 @@ export default function BookingPanel({
     const [dropoffSearch, setDropoffSearch] = useState("");
     const [showLoginModal, setShowLoginModal] = useState(false);
     const router = useRouter();
+    const { data: profileData} = useGetRiderProfileQuery(null)
+    const [createRideRequest, {isLoading}] = useCreateRideReqestMutation()
 
     // Sync search inputs
     useEffect(() => {
@@ -49,49 +52,47 @@ export default function BookingPanel({
         setDropoffSearch(dropoff ? dropoff.address : "");
     }, [dropoff]);
 
-    const saveLocationsAndProceed = () => {
+    
+
+    const handleCheckEstimation = async () => {
         if (!pickup || !dropoff) return;
 
-        const rideLocations = {
-            pickup: {
-                address: pickup.address,
-                latitude: pickup.latitude,
-                longitude: pickup.longitude,
-            },
-            dropoff: {
-                address: dropoff.address,
-                latitude: dropoff.latitude,
-                longitude: dropoff.longitude,
-            },
-            savedAt: new Date().toISOString(),
-        };
-
-        try {
-            localStorage.setItem(RIDE_LOCATIONS_STORAGE_KEY, JSON.stringify(rideLocations));
-            router.push("/estimation");
-        } catch (err) {
-            console.error("Failed to save ride locations to localStorage:", err);
+       
+        if (!profileData?.data) {
+            setShowLoginModal(true);
+            return;
         }
 
-        onContinue?.();
-    };
-
-    const handleCheckEstimation = () => {
-        if (!pickup || !dropoff) return;
-        setShowLoginModal(true);
+       
+        try {
+            const creating = await createRideRequest({ pickup, dropOff: dropoff }).unwrap();
+            if (creating.success) {
+                router.push('/estimation');
+            }
+        } catch (error:any) {
+            toast.error(error?.data?.message);
+        }
     };
 
       
-    const handleLoginSuccess = () => {
+     const handleLoginSuccess = async () => {
         setShowLoginModal(false);
-        saveLocationsAndProceed();
+
+        try {
+            const creating = await createRideRequest({ pickup, dropOff: dropoff }).unwrap();
+            if (creating.success) {
+                router.push('/estimation');
+            }
+        } catch (error:any) {
+             toast.error(error?.data?.message)
+        }
     };
 
     const handleSuggestionClick = (locName: string, lat: number, lng: number) => {
         const newLoc: Location = {
             address: locName,
             latitude: lat,
-            longitude: lng,
+            langitude: lng,
         };
 
         if (!pickup) {
@@ -107,7 +108,7 @@ export default function BookingPanel({
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col h-full justify-between gap-6 overflow-hidden">
             <div className="flex flex-col gap-5 h-full justify-between">
                 <div className="space-y-4">
-                    {/* হেডার */}
+                    {/* header */}
                     <div>
                         <h2 className="text-xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
                             <span className="p-1.5 rounded-lg bg-sky-500/10 text-sky-400">⚡</span>
@@ -131,7 +132,7 @@ export default function BookingPanel({
                                 const newLoc: Location = {
                                     address: address,
                                     latitude: lat,
-                                    longitude: lng,
+                                    langitude: lng,
                                 };
                                 setPickup(newLoc);
                                 setPickupSearch(address);
@@ -159,7 +160,7 @@ export default function BookingPanel({
                                 const newLoc: Location = {
                                     address: address,
                                     latitude: lat,
-                                    longitude: lng,
+                                    langitude: lng,
                                 };
                                 setDropoff(newLoc);
                                 setDropoffSearch(address);
@@ -216,15 +217,43 @@ export default function BookingPanel({
                 {/* Check Ride Estimations Button */}
                 <button
                     type="button"
-                    disabled={!pickup || !dropoff}
+                    disabled={!pickup || !dropoff || isLoading}
                     onClick={handleCheckEstimation}
-                    className={`w-full py-3.5 rounded-2xl font-semibold flex items-center justify-center gap-2 text-sm transition-all ${pickup && dropoff
+                    className={`w-full py-3.5 rounded-2xl font-semibold flex items-center justify-center gap-2 text-sm transition-all ${pickup && dropoff && !isLoading
                             ? "bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-white shadow-lg shadow-sky-500/25 active:scale-[0.98] cursor-pointer"
                             : "bg-slate-800 text-slate-500 cursor-not-allowed"
                         }`}
                 >
-                    <span>Check Ride Estimations</span>
-                    <ArrowRight className="w-4 h-4" />
+                    {isLoading ? (
+                        <div className="flex items-center gap-2">
+                            <svg
+                                className="animate-spin h-4 w-4 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                />
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                            </svg>
+                            <span>Requesting...</span>
+                        </div>
+                    ) : (
+                        <>
+                            <span>Check Ride Estimations</span>
+                            <ArrowRight className="w-4 h-4" />
+                        </>
+                    )}
                 </button>
             </div>
 
