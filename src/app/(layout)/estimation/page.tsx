@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Clock,
   User,
@@ -11,95 +11,86 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useGetRequestWithVehiclesQuery } from '@/redux/features/ride/rideApi';
-import CityMap from '@/components/CityMap'; // the real Google Maps component built earlier
+import { useGetRequestWithVehiclesQuery, useSelecetVehicleMutation } from '@/redux/features/ride/rideApi';
+import CityMap from '@/components/CityMap';
 
 interface EstimationDashboardProps {
   walletBalance: number;
 }
 
 const paymentOptions = [
-  { value: 'wallet', label: 'Wallet Balance', icon: Wallet },
-  { value: 'cash', label: 'Cash', icon: Banknote },
+  { value: 'credit', label: 'Wallet Balance', icon: Wallet },
+  { value: 'COD', label: 'Cash', icon: Banknote },
 ] as const;
 
-interface VehicleEstimateOption {
-  id: string;
-  name: string;
-  capacity: number;
-  durationMin: number;
-  arrivalTime: string;
-  description: string;
-  fareBDT: number;
-  badge?: string;
-  image: string;
-}
-
 function getArrivalTime(minutesAway: number): string {
+  if (!minutesAway) return '--:--';
   const now = new Date();
   now.setMinutes(now.getMinutes() + minutesAway);
   return now.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
 export default function EstimationDashboard({ walletBalance }: EstimationDashboardProps) {
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'wallet'>('wallet');
+  // Direct store selected full vehicle object
+  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'credit' | 'COD'>('credit');
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const { data: requestWithVehicles, isLoading, isError } = useGetRequestWithVehiclesQuery({});
+  const [selectVehicle, { isLoading: selectingLoader }] = useSelecetVehicleMutation();
 
   const rideRequest = requestWithVehicles?.data?.rideRequest;
-  const vehicles = requestWithVehicles?.data?.vehicles ?? [];
+  const vehicles: any[] = requestWithVehicles?.data?.vehicles ?? [];
 
-  const selected = paymentOptions.find((o) => o.value === paymentMethod)!;
-  const SelectedIcon = selected.icon;
+  const selectedPayment = paymentOptions.find((o) => o.value === paymentMethod)!;
+  const SelectedIcon = selectedPayment.icon;
 
-  // Backend already returns fare + duration per vehicle (calculated from
-  // rideRequest.totalDistanceKm + each vehicle's own rate/speed) — no client-side
-  // distance/fare math needed here anymore, just map the shape for display.
-  const vehicleOptions = useMemo<VehicleEstimateOption[]>(() => {
-    return vehicles.map((v: any) => ({
-      id: v._id,
-      name: v.vehicle_name,
-      capacity: v.capacity,
-      durationMin: v.duration,
-      arrivalTime: getArrivalTime(v.duration),
-      description: v.description,
-      fareBDT: v.fare,
-      badge: v.badge,
-      image: v.image,
-    }));
-  }, [vehicles]);
-
-  // Auto-select the first vehicle once the list loads
+  // Auto-select the first vehicle once data is loaded
   useEffect(() => {
-    if (vehicleOptions.length > 0 && !selectedVehicleId) {
-      setSelectedVehicleId(vehicleOptions[0].id);
+    if (vehicles.length > 0 && !selectedVehicle) {
+      setSelectedVehicle(vehicles[0]);
     }
-  }, [vehicleOptions, selectedVehicleId]);
+  }, [vehicles, selectedVehicle]);
 
   // Close payment dropdown on outside click
   useEffect(() => {
     const onClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
     };
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
-  const selectedVehicle = vehicleOptions.find((v) => v.id === selectedVehicleId) || vehicleOptions[0];
+  const handleRequestRide = async () => {
+    if (!selectedVehicle || !rideRequest?._id) return;
 
-  const handleRequestRide = () => {
-    router.push('/find-driver');
+    const payload = {
+      rideReqId: rideRequest._id,
+      vehicleId: selectedVehicle._id,
+      fare: selectedVehicle.fare,
+      paymentType: paymentMethod,
+    };
+
+    try {
+      const res = await selectVehicle(payload).unwrap();
+      if (res?.success) {
+        router.push('/find-driver');
+      }
+    } catch (err: any) {
+      console.error('Failed to select vehicle:', err);
+    }
   };
 
   return (
     <div className="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-sky-500/30 selection:text-sky-200">
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 lg:gap-6 items-stretch">
 
-        {/* ===== COLUMN 1: Trip summary (from rideRequest) ===== */}
+        {/* ===== COLUMN 1: Trip Summary ===== */}
         <section className="lg:col-span-3 flex flex-col gap-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xl space-y-4 sm:space-y-5">
             <div className="space-y-1">
@@ -115,7 +106,7 @@ export default function EstimationDashboard({ walletBalance }: EstimationDashboa
               </div>
             </div>
 
-            {/* Pickup / Dropoff — read-only, this trip was already requested */}
+            {/* Pickup / Dropoff */}
             <div className="relative space-y-3.5">
               <div className="absolute left-[13px] top-[14px] bottom-[14px] w-0.5 bg-slate-800 border-dashed border-slate-700/60" />
 
@@ -157,7 +148,7 @@ export default function EstimationDashboard({ walletBalance }: EstimationDashboa
               </button>
             </div>
 
-            {/* Route stats — straight from rideRequest, no client-side estimation */}
+            {/* Route Stats */}
             <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-850/80 text-xs text-slate-400 space-y-2">
               <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 font-extrabold uppercase">
                 <span>Route Stats</span>
@@ -170,16 +161,16 @@ export default function EstimationDashboard({ walletBalance }: EstimationDashboa
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span>Est. Duration (selected ride):</span>
+                <span>Est. Duration:</span>
                 <span className="font-bold text-slate-200 font-mono">
-                  {selectedVehicle ? `${selectedVehicle.durationMin} mins` : '—'}
+                  {selectedVehicle?.duration ? `${selectedVehicle.duration} mins` : '—'}
                 </span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ===== COLUMN 2: Choose a ride ===== */}
+        {/* ===== COLUMN 2: Vehicle Selection ===== */}
         <section className="lg:col-span-5 flex flex-col justify-between gap-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xl flex-1 flex flex-col justify-between gap-4 sm:gap-5 relative">
 
@@ -195,13 +186,9 @@ export default function EstimationDashboard({ walletBalance }: EstimationDashboa
                         <div className="space-y-2">
                           <div className="h-4 w-24 bg-slate-700/50 rounded" />
                           <div className="h-3 w-20 bg-slate-700/50 rounded" />
-                          <div className="h-3 w-32 bg-slate-700/50 rounded" />
                         </div>
                       </div>
-                      <div className="space-y-2 text-right">
-                        <div className="h-4 w-16 bg-slate-700/50 rounded ml-auto" />
-                        <div className="h-3 w-12 bg-slate-700/50 rounded ml-auto" />
-                      </div>
+                      <div className="h-4 w-16 bg-slate-700/50 rounded" />
                     </div>
                   ))}
                 </div>
@@ -211,56 +198,60 @@ export default function EstimationDashboard({ walletBalance }: EstimationDashboa
                   <div className="text-rose-400 text-sm font-bold">Could not load vehicles</div>
                   <p className="text-slate-500 text-xs">Please refresh or try again later.</p>
                 </div>
-              ) : vehicleOptions.length === 0 ? (
+              ) : vehicles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <div className="text-slate-400 text-sm">No vehicles available</div>
                   <p className="text-slate-500 text-xs mt-1">Check back later.</p>
                 </div>
               ) : (
                 <div className="thin-scrollbar space-y-2.5 sm:space-y-3 max-h-[320px] sm:max-h-[350px] overflow-y-auto pr-2 -mr-2">
-                  {vehicleOptions.map((option) => {
-                    const isSelected = selectedVehicleId === option.id;
+                  {vehicles.map((v) => {
+                    const isSelected = selectedVehicle?._id === v._id;
                     return (
                       <div
-                        key={option.id}
-                        onClick={() => setSelectedVehicleId(option.id)}
+                        key={v._id}
+                        onClick={() => setSelectedVehicle(v)}
                         className={`relative flex items-center justify-between gap-2 p-3 sm:p-4 rounded-2xl cursor-pointer transition-all border ${isSelected
-                          ? 'bg-slate-950 border-sky-500 shadow-lg shadow-sky-500/5 ring-1 ring-sky-500/20'
-                          : 'bg-slate-950/40 border-slate-850 hover:bg-slate-950/80 hover:border-slate-800'
+                            ? 'bg-slate-950 border-sky-500 shadow-lg shadow-sky-500/5 ring-1 ring-sky-500/20'
+                            : 'bg-slate-950/40 border-slate-850 hover:bg-slate-950/80 hover:border-slate-800'
                           }`}
                       >
                         <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
                           <div className="w-11 h-11 sm:w-14 sm:h-14 bg-slate-950 border border-slate-850 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-inner flex-shrink-0 select-none relative overflow-hidden">
-                            {option.image ? (
-                              <img src={option.image} alt={option.name} className="w-9 h-9 object-contain" />
+                            {v.image ? (
+                              <img src={v.image} alt={v.vehicle_name} className="w-9 h-9 object-contain" />
                             ) : (
                               <span className="text-xl sm:text-3xl">🚗</span>
                             )}
                           </div>
                           <div className="space-y-1 min-w-0">
                             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                              <h4 className="text-xs sm:text-sm font-black text-slate-100">{option.name}</h4>
-                              <span className="text-[10px] text-slate-400 font-mono font-bold flex items-center gap-0.5">
-                                👤 {option.capacity}
-                              </span>
-                              {option.badge && (
+                              <h4 className="text-xs sm:text-sm font-black text-slate-100">{v.vehicle_name}</h4>
+                              {v.capacity && (
+                                <span className="text-[10px] text-slate-400 font-mono font-bold flex items-center gap-0.5">
+                                  👤 {v.capacity}
+                                </span>
+                              )}
+                              {v.badge && (
                                 <span className="text-[7px] font-bold tracking-wider bg-sky-500/10 text-sky-400 border border-sky-500/20 px-1.5 py-0.5 rounded-md uppercase">
-                                  {option.badge}
+                                  {v.badge}
                                 </span>
                               )}
                             </div>
                             <p className="text-[10px] text-slate-500 font-bold tracking-tight">
-                              {option.durationMin} mins away • {option.arrivalTime}
+                              {v.duration} mins away • {getArrivalTime(v.duration)}
                             </p>
-                            <p className="hidden xs:block text-[10px] text-slate-400 leading-normal max-w-[160px] sm:max-w-[190px] line-clamp-1">
-                              {option.description}
-                            </p>
+                            {v.description && (
+                              <p className="hidden xs:block text-[10px] text-slate-400 leading-normal max-w-[160px] sm:max-w-[190px] line-clamp-1">
+                                {v.description}
+                              </p>
+                            )}
                           </div>
                         </div>
 
                         <div className="text-right space-y-1 shrink-0">
                           <div className="text-xs font-black text-slate-100 font-mono">
-                            BDT {option.fareBDT.toFixed(2)}
+                            BDT {Number(v.fare || 0).toFixed(2)}
                           </div>
                           {isSelected && (
                             <span className="inline-flex items-center justify-center w-3.5 h-3.5 bg-sky-500 text-white rounded-full text-[8px] font-bold ml-auto mt-1">
@@ -275,9 +266,9 @@ export default function EstimationDashboard({ walletBalance }: EstimationDashboa
               )}
             </div>
 
-            {/* --- Bottom: Payment + Request --- */}
+            {/* --- Payment & Request Action --- */}
             <div className="border-t border-slate-800/80 pt-4 space-y-3 sm:space-y-4">
-              <div className="relative" ref={ref}>
+              <div className="relative" ref={dropdownRef}>
                 <button
                   type="button"
                   onClick={() => setOpen((o) => !o)}
@@ -292,9 +283,9 @@ export default function EstimationDashboard({ walletBalance }: EstimationDashboa
                         Payment Method
                       </span>
                       <span className="text-slate-200 text-xs font-bold truncate block">
-                        {selected.value === 'wallet'
+                        {selectedPayment.value === 'credit'
                           ? `Wallet Balance (Est. ৳${walletBalance})`
-                          : selected.label}
+                          : selectedPayment.label}
                       </span>
                     </div>
                   </div>
@@ -323,7 +314,7 @@ export default function EstimationDashboard({ walletBalance }: EstimationDashboa
                             <Icon className="w-3.5 h-3.5" />
                           </div>
                           <span className="text-slate-200 text-xs font-bold flex-1 truncate">
-                            {opt.value === 'wallet' ? `Wallet Balance (Est. ৳${walletBalance})` : opt.label}
+                            {opt.value === 'credit' ? `Wallet Balance (Est. ৳${walletBalance})` : opt.label}
                           </span>
                           {isActive && <Check className="w-3.5 h-3.5 text-sky-400 shrink-0" />}
                         </button>
@@ -335,18 +326,20 @@ export default function EstimationDashboard({ walletBalance }: EstimationDashboa
 
               <button
                 onClick={handleRequestRide}
-                disabled={!selectedVehicle || isLoading}
-                className={`w-full font-bold py-3.5 sm:py-4 rounded-2xl text-xs sm:text-sm tracking-wide transition-all duration-300 cursor-pointer text-center flex items-center justify-center gap-1.5 active:scale-[0.99] ${selectedVehicle && !isLoading
-                  ? 'bg-sky-500 hover:bg-sky-400 text-[#070b14] shadow-[0_8px_24px_-8px_rgba(56,189,248,0.6)]'
-                  : 'bg-slate-700 text-slate-400 cursor-not-allowed shadow-none'
+                disabled={!selectedVehicle || selectingLoader || isLoading}
+                className={`w-full font-bold py-3.5 sm:py-4 rounded-2xl text-xs sm:text-sm tracking-wide transition-all duration-300 cursor-pointer text-center flex items-center justify-center gap-1.5 active:scale-[0.99] ${selectedVehicle && !selectingLoader && !isLoading
+                    ? 'bg-sky-500 hover:bg-sky-400 text-[#070b14] shadow-[0_8px_24px_-8px_rgba(56,189,248,0.6)]'
+                    : 'bg-slate-700 text-slate-400 cursor-not-allowed shadow-none'
                   }`}
               >
                 <span>
-                  {isLoading
-                    ? 'Loading…'
-                    : selectedVehicle
-                      ? `Request ${selectedVehicle.name} · BDT ${selectedVehicle.fareBDT.toFixed(2)}`
-                      : 'No ride available'}
+                  {selectingLoader
+                    ? 'Processing…'
+                    : isLoading
+                      ? 'Loading…'
+                      : selectedVehicle
+                        ? `Request ${selectedVehicle.vehicle_name} · BDT ${Number(selectedVehicle.fare || 0).toFixed(2)}`
+                        : 'No ride available'}
                 </span>
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -354,7 +347,7 @@ export default function EstimationDashboard({ walletBalance }: EstimationDashboa
           </div>
         </section>
 
-        {/* ===== COLUMN 3: Real map (Google Maps, driven by rideRequest coords) ===== */}
+        {/* ===== COLUMN 3: Map Component ===== */}
         <section className="lg:col-span-4 flex flex-col gap-4">
           <CityMap pickup={rideRequest?.pickup} dropoff={rideRequest?.dropOff} />
         </section>

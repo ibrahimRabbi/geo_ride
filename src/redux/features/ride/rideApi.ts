@@ -20,9 +20,22 @@ const rideApi = baseApi.injectEndpoints({
                         method : 'GET'
                     }
                 }
+            }),
+
+
+            selecetVehicle: builder.mutation({
+                query: (data) => {
+                    return {
+                        url: '/ride-request/select-vehicle',
+                        method: 'PATCH',
+                        body : data
+                    }
+                }
             })
+
+
         }
     }
 })
 
-export const {useCreateRideReqestMutation, useGetRequestWithVehiclesQuery}= rideApi
+export const {useCreateRideReqestMutation, useGetRequestWithVehiclesQuery,useSelecetVehicleMutation}= rideApi
