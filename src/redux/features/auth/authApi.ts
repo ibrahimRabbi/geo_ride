@@ -18,7 +18,15 @@ export const authApi = baseApi.injectEndpoints({
                     method : 'GET',
                 }
             }
-        })
+        }),
+
+        driverSign: builder.mutation({
+            query: (data) => ({
+                url: "/driver/sign-in",
+                method: "POST",
+                body: data,
+            }),
+        }),
 
     })
 })

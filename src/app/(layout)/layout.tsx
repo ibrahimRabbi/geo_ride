@@ -10,9 +10,9 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             <Navbar />
             <GoogleMapsProvider>
                 {children}
-            </GoogleMapsProvider>  
+            </GoogleMapsProvider>
             <Footer />
-            <Toaster/>
+            <Toaster />
         </div>
     );
 };

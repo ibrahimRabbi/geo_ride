@@ -1,6 +1,7 @@
-import { Car, Wallet, ShieldAlert, ArrowRightLeft, UserCircle2 } from 'lucide-react';
+import { Car, Wallet, ShieldAlert, ArrowRightLeft, UserCircle2, UserPlus } from 'lucide-react';
+import Link from 'next/link';
 
- 
+
 
 export default function Navbar() {
     return (
@@ -34,19 +35,15 @@ export default function Navbar() {
                 {/* Global Perspective Mode Switcher */}
                 <div className="flex items-center gap-2">
 
-                    {/* Rider / Driver Toggle */}
-                    <div className="bg-slate-900 p-1 rounded-xl border border-slate-850/90 flex items-center shadow-inner">
+                    {/* Become a Rider CTA — replaces the old Rider/Driver toggle */}
+                    <Link href='/driver/auth/sign-in'>
                         <button
-                             
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer  'bg-gradient-to-r from-sky-500 to-sky-600 text-white shadow-md'`}>
-                            Rider
+                            type="button"
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-sky-500 to-sky-600 text-white shadow-md shadow-sky-500/20 hover:from-sky-400 hover:to-sky-500 transition-all cursor-pointer active:scale-[0.97]">
+                            <UserPlus className="w-3.5 h-3.5" />
+                            Become a Rider
                         </button>
-                        <button
-                            
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-slate-200'`}>
-                            Driver
-                        </button>
-                    </div>
+                    </Link>
 
                     {/* User Profile menu placeholder */}
                     <div className="hidden sm:flex items-center gap-2 bg-slate-950 border border-slate-800 p-1.5 rounded-full">
