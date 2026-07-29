@@ -46,11 +46,20 @@ export const driverApi = baseApi.injectEndpoints({
                         method:'GET'
                     }
                 }
-            })
+            }),
+
+            updateLocation: builder.mutation({
+                query: (coordinates) => ({
+                    url: "/driver/update-location",
+                    method: "PATCH",
+                    body: coordinates,
+                }),
+            }),
+
 
         }
     }
 })
 
 
-export const {useCreateDriverMutation,useUploadImageMutation,useRegisterDriverMutation,useDriverSignMutation,useGetDriverProfileQuery} = driverApi
+export const {useCreateDriverMutation,useUploadImageMutation,useRegisterDriverMutation,useDriverSignMutation,useGetDriverProfileQuery,useUpdateLocationMutation} = driverApi
