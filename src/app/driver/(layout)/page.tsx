@@ -13,10 +13,27 @@ import {
     HelpCircle,
     Navigation,
 } from 'lucide-react';
+import { useGetDriverProfileQuery } from '@/redux/features/driver/driverApi';
 
 export default function DriverDashboardPage() {
     const router = useRouter();
     const [online, setOnline] = useState(false);
+    const { data: profile, isLoading } = useGetDriverProfileQuery({});
+
+    // Auth + status guard
+    useEffect(() => {
+        if (isLoading) return;
+
+        if (!profile?.data) {
+            router.push('/driver/auth/sign-in');
+            return;
+        }
+
+        if (profile.data?.status === 'pending') {
+            router.push('/driver/auth/verification-pending');
+            return;
+        }
+    }, [isLoading, profile, router]);
 
     // Simulate an incoming ride request 4s after going online
     useEffect(() => {
@@ -25,13 +42,70 @@ export default function DriverDashboardPage() {
         return () => clearTimeout(t);
     }, [online, router]);
 
+  
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-[#070b14] text-slate-100 flex items-center justify-center relative overflow-hidden">
+                {/* Ambient glow background */}
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-sky-500/10 rounded-full blur-[100px]" />
+                    <div className="absolute bottom-1/4 left-1/3 w-[300px] h-[300px] bg-emerald-500/10 rounded-full blur-[100px]" />
+                </div>
+
+                <div className="relative z-10 flex flex-col items-center gap-6">
+                    {/* Spinner */}
+                    <div className="relative w-24 h-24">
+                        {/* Outer rotating ring */}
+                        <div className="absolute inset-0 rounded-full border-2 border-slate-800" />
+                        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-sky-400 border-r-sky-400 animate-spin" />
+
+                        {/* Middle rotating ring (reverse) */}
+                        <div
+                            className="absolute inset-2 rounded-full border-2 border-transparent border-b-emerald-400 border-l-emerald-400"
+                            style={{ animation: 'spin 1.4s linear infinite reverse' }}
+                        />
+
+                        {/* Pulsing glow core */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="absolute w-10 h-10 rounded-full bg-sky-500/20 animate-ping" />
+                            <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-sky-500/20 to-emerald-500/20 border border-sky-500/30 flex items-center justify-center backdrop-blur-sm">
+                                <Navigation className="w-4 h-4 text-sky-400 animate-pulse" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Text */}
+                    <div className="flex flex-col items-center gap-1.5">
+                        <p className="text-sm font-semibold bg-gradient-to-r from-sky-400 via-slate-100 to-emerald-400 bg-clip-text text-transparent tracking-wide animate-[shimmer_2s_ease-in-out_infinite]">
+                            Loading your dashboard
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-bounce [animation-delay:-0.3s]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:-0.15s]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" />
+                        </div>
+                    </div>
+                </div>
+
+                <style>{`
+                    @keyframes shimmer {
+                        0%, 100% { opacity: 0.7; }
+                        50% { opacity: 1; }
+                    }
+                `}</style>
+            </div>
+        );
+    }
+
+    if (!profile?.data || profile.data?.status === 'pending') {
+        return null;
+    }
+
     return (
         <div className="min-h-screen bg-[#070b14] text-slate-100 font-sans pb-20">
             <div className="pointer-events-none fixed inset-0 overflow-hidden">
                 <div className="absolute -top-40 left-1/4 w-[500px] h-[500px] bg-sky-500/10 rounded-full blur-[120px]" />
             </div>
-
-          
 
             <main className="relative z-10 max-w-5xl mx-auto px-4 py-6">
                 {/* Online/Offline toggle */}
@@ -39,8 +113,8 @@ export default function DriverDashboardPage() {
                     <button
                         onClick={() => setOnline((o) => !o)}
                         className={`relative w-28 h-28 mx-auto rounded-full flex items-center justify-center transition-all duration-300 ${online
-                                ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-[0_0_40px_-6px_rgba(52,211,153,0.6)]'
-                                : 'bg-slate-900 border-2 border-slate-700'
+                            ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-[0_0_40px_-6px_rgba(52,211,153,0.6)]'
+                            : 'bg-slate-900 border-2 border-slate-700'
                             }`}
                     >
                         {online && <span className="absolute inset-0 rounded-full border-2 border-emerald-400/40 animate-ping" />}

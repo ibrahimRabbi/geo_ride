@@ -39,9 +39,18 @@ export const driverApi = baseApi.injectEndpoints({
                 }),
             }),
 
+            getDriverProfile: builder.query({
+                query: () => {
+                    return {
+                        url: '/driver/driver-profile',
+                        method:'GET'
+                    }
+                }
+            })
+
         }
     }
 })
 
 
-export const {useCreateDriverMutation,useUploadImageMutation,useRegisterDriverMutation,useDriverSignMutation} = driverApi
+export const {useCreateDriverMutation,useUploadImageMutation,useRegisterDriverMutation,useDriverSignMutation,useGetDriverProfileQuery} = driverApi
