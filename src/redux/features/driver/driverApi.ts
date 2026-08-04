@@ -56,10 +56,18 @@ export const driverApi = baseApi.injectEndpoints({
                 }),
             }),
 
+            updateDriver: builder.mutation({
+                query: (payload) => ({
+                    url: "/driver/update-driver",
+                    method: "PATCH",
+                    body: payload,
+                }),
+            }),
+
 
         }
     }
 })
 
 
-export const {useCreateDriverMutation,useUploadImageMutation,useRegisterDriverMutation,useDriverSignMutation,useGetDriverProfileQuery,useUpdateLocationMutation} = driverApi
+export const {useCreateDriverMutation,useUploadImageMutation,useRegisterDriverMutation,useDriverSignMutation,useGetDriverProfileQuery,useUpdateLocationMutation, useUpdateDriverMutation} = driverApi

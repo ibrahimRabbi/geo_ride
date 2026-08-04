@@ -8,7 +8,7 @@ const rideApi = baseApi.injectEndpoints({
                     return {
                         url: '/ride-request/create-request',
                         method: "POST",
-                        body : data
+                        body: data
                     }
                 }
             }),
@@ -17,7 +17,16 @@ const rideApi = baseApi.injectEndpoints({
                 query: () => {
                     return {
                         url: '/ride-request/get-my-request',
-                        method : 'GET'
+                        method: 'GET'
+                    }
+                }
+            }),
+
+            getRideRequest: builder.query({
+                query: (rideReqId) => {
+                    return {
+                        url: `/ride-request/get-request/${rideReqId}`,
+                        method: 'GET'
                     }
                 }
             }),
@@ -28,7 +37,16 @@ const rideApi = baseApi.injectEndpoints({
                     return {
                         url: '/ride-request/select-vehicle',
                         method: 'PATCH',
-                        body : data
+                        body: data
+                    }
+                }
+            }),
+
+            getNearDrivers: builder.query({
+                query: (rideReqId) => {
+                    return {
+                        url: `/ride-request/find-nearby-drivers/${rideReqId}`,
+                        method: 'GET'
                     }
                 }
             })
@@ -38,4 +56,4 @@ const rideApi = baseApi.injectEndpoints({
     }
 })
 
-export const {useCreateRideReqestMutation, useGetRequestWithVehiclesQuery,useSelecetVehicleMutation}= rideApi
+export const { useCreateRideReqestMutation, useGetRequestWithVehiclesQuery, useSelecetVehicleMutation, useGetNearDriversQuery, useGetRideRequestQuery } = rideApi

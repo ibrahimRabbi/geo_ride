@@ -1,6 +1,6 @@
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navber';
-import { GoogleMapsProvider } from '@/lib/GoogleMapProvider';
+import { GoogleMapsProvider } from '@/hooks/GoogleMapProvider';
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
 

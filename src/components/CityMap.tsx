@@ -1,9 +1,9 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
-import { GoogleMap, Marker, OverlayView, Polyline, DirectionsService} from '@react-google-maps/api';
-import {AlertTriangle, ChevronRight } from 'lucide-react';
+import { GoogleMap, Marker, OverlayView, Polyline, DirectionsService } from '@react-google-maps/api';
+import { AlertTriangle, ChevronRight } from 'lucide-react';
 import { Location } from '@/lib/types';
-import { useGoogleMaps } from '@/lib/GoogleMapProvider';
+import { useGoogleMaps } from '@/hooks/GoogleMapProvider';
 
 interface CityMapProps {
     pickup: Location | null;
@@ -64,7 +64,7 @@ function LocationTag({
 }
 
 export default function CityMap({ pickup, dropoff }: CityMapProps) {
-   
+
     const { isLoaded, loadError } = useGoogleMaps();
     const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
     const [directionsError, setDirectionsError] = useState<string | null>(null);
@@ -255,7 +255,7 @@ export default function CityMap({ pickup, dropoff }: CityMapProps) {
                 )}
             </div>
 
-            
+
         </div>
     );
 }

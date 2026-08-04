@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Loader2, X } from "lucide-react";
 import { Autocomplete, useLoadScript } from "@react-google-maps/api";
-import { useGoogleMaps } from "@/lib/GoogleMapProvider";
+import { useGoogleMaps } from "@/hooks/GoogleMapProvider";
 
 interface AddressInputProps {
     value?: string;
@@ -114,12 +114,12 @@ export default function AddressInput({
                 )}
 
                 <Autocomplete
-                    onLoad={(autocomplete) => {autocompleteRef.current = autocomplete;}}
+                    onLoad={(autocomplete) => { autocompleteRef.current = autocomplete; }}
                     onPlaceChanged={handlePlaceChanged}
                     options={{
                         types: ["geocode", "establishment"],
                         fields: ["address_components", "formatted_address", "geometry", "name"],
-                        componentRestrictions: { country: "bd" },  
+                        componentRestrictions: { country: "bd" },
                     }}
                 >
                     <input
